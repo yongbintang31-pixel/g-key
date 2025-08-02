@@ -37,7 +37,15 @@ if not os.path.exists(source_path):
 
 
 #@title 安装
-!pip install yt-dlp
+#!pip install yt-dlp
+import subprocess
+
+try:
+    subprocess.check_call(["pip", "install", "yt-dlp"])
+    print("yt-dlp 安装成功")
+except subprocess.CalledProcessError as e:
+    print(f"安装失败: {e}")
+
 from IPython.display import clear_output
 clear_output()
 # @title #安装下载必要的库
