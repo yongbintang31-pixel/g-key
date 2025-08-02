@@ -1235,35 +1235,33 @@ urls = get_videos_from_channel(channel_url,min_duration_seconds,max_duration_sec
 urls.reverse()
 print(urls)
 n = 1
+try:
+    for url in urls:
+        if one_time_to_make_videos < n:
+          break
+        create_output_folder(output_folder)
+        result = download_video(url, output_folder, processed_urls_file)
+        print('result',result)
+        if not result:
+          print('下载失败，可能已经处理过了')
+          continue
+        print('下载成功！',result)
+        df_and_create_video(result)
+        #result = {"title": "我的新视频文件"}
+        source_file = "/content/processed_output_video_audio_without_bgm.mp4"
+        # 调用函数
+        #copy_and_rename_video(source_file, result["title"])
+        youtube = authenticate_with_saved_token()
+        video_file = source_file
+        title = get_refined_audiobook_title(result['title'])
+        title = format_youtube_title(title)
+        print(title)
+        description = get_refined_youtube_description(result['description'])
+        print(description)
+        tags =[]
+        days = 1
+        upload_video(youtube, video_file, title, description, tags,status,days)
+        write_url_to_file(processed_urls_file, url)
+except Exception as e:
+    print(e)
 
-for url in urls:
-    if one_time_to_make_videos < n:
-      break
-    create_output_folder(output_folder)
-    result = download_video(url, output_folder, processed_urls_file)
-    print('result',result)
-    if not result:
-      print('下载失败，可能已经处理过了')
-      continue
-    print('下载成功！',result)
-    df_and_create_video(result)
-    #result = {"title": "我的新视频文件"}
-    source_file = "/content/processed_output_video_audio_without_bgm.mp4"
-
-    # 调用函数
-    #copy_and_rename_video(source_file, result["title"])
-    youtube = authenticate_with_saved_token()
-    video_file = source_file
-    title = get_refined_audiobook_title(result['title'])
-    title = format_youtube_title(title)
-    print(title)
-    description = get_refined_youtube_description(result['description'])
-    print(description)
-    tags =[]
-    days = 1
-    upload_video(youtube, video_file, title, description, tags,status,days)
-
-    write_url_to_file(processed_urls_file, url)
-
-import time
-time.sleep(9999999999999)
