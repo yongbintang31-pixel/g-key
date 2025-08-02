@@ -13,3 +13,4 @@ ggapi = response.text.splitlines()
 random.shuffle(ggapi)
 # 输出查看
 print(ggapi)
+print(outside_w)
