@@ -390,7 +390,26 @@ import subprocess
 import os
 
 def add_bgm_to_video(input_video_path, bgm_audio_path, adelay_ms=0, volume=bgm_volum):
-    !ffmpeg -stream_loop -1 -i "{bgm_audio_path}" -t 12:00:00 -c copy -y "/content/tem.mp3"
+    #!ffmpeg -stream_loop -1 -i "{bgm_audio_path}" -t 12:00:00 -c copy -y "/content/tem.mp3"
+    import subprocess
+    bgm_audio_path = bgm_audio_path  # 替换为你自己的音频路径
+    output_path = "/content/tem.mp3"
+    
+    command = [
+        "ffmpeg",
+        "-stream_loop", "-1",
+        "-i", bgm_audio_path,
+        "-t", "12:00:00",
+        "-c", "copy",
+        "-y", output_path
+    ]
+    
+    try:
+        subprocess.run(command, check=True)
+        print("处理完成 ✅")
+    except subprocess.CalledProcessError as e:
+        print(f"执行出错：{e}")
+
     bgm_audio_path = "/content/tem.mp3"
     # Extract the directory and base name of the input video
     input_dir = os.path.dirname(input_video_path)
