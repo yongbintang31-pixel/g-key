@@ -9,7 +9,7 @@ import subprocess
 
 try:
     subprocess.check_call(["pip", "install", "supabase"])
-    print("yt-dlp 安装成功")
+    print("supabase 安装成功")
 except subprocess.CalledProcessError as e:
     print(f"安装失败: {e}")
 from supabase import create_client, Client
