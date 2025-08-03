@@ -562,7 +562,7 @@ print("下载成功",ggapi)
 
 
 
-def get_refined_audiobook_title(
+def get_refined_youtube_description(
     original_title: str,
     ggapi: List[str]
 ) -> str:
@@ -609,7 +609,7 @@ def get_refined_audiobook_title(
     raise RuntimeError("所有 API key 调用均失败，无法获取重写后的标题。")
 
 
-def get_refined_youtube_description(
+def get_refined_audiobook_title(
     original_title: str,
     ggapi: List[str]
 ) -> str:
@@ -1322,6 +1322,11 @@ try:
           print('下载失败，可能已经处理过了')
           continue
         print('下载成功！',result)
+        title = get_refined_audiobook_title(result['title'],ggapi)
+        title = format_youtube_title(title)
+        print(title)
+        description = get_refined_youtube_description(result['description'],ggapi)
+        print(description)
         df_and_create_video(result)
         #result = {"title": "我的新视频文件"}
         source_file = "/content/processed_output_video_audio_without_bgm.mp4"
@@ -1329,11 +1334,6 @@ try:
         #copy_and_rename_video(source_file, result["title"])
         youtube = authenticate_with_saved_token()
         video_file = source_file
-        title = get_refined_audiobook_title(result['title'],ggapi)
-        title = format_youtube_title(title)
-        print(title)
-        description = get_refined_youtube_description(result['description'],ggapi)
-        print(description)
         tags =[]
         days = 1
         upload_video(youtube, video_file, title, description, tags,status,days)
