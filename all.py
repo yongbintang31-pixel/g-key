@@ -1291,10 +1291,10 @@ try:
         #copy_and_rename_video(source_file, result["title"])
         youtube = authenticate_with_saved_token()
         video_file = source_file
-        title = get_refined_audiobook_title(result['title'])
+        title = get_refined_audiobook_title(result['title'],ggapi)
         title = format_youtube_title(title)
         print(title)
-        description = get_refined_youtube_description(result['description'])
+        description = get_refined_youtube_description(result['description'],ggapi)
         print(description)
         tags =[]
         days = 1
