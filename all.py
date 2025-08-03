@@ -563,7 +563,7 @@ print("下载成功",ggapi)
 
 
 def get_refined_youtube_description(
-    original_title: str,
+    original_description: str,
     ggapi: List[str]
 ) -> str:
     """
