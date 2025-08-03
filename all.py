@@ -1709,3 +1709,43 @@ def set_videos_schedule(token_path):
 
 
 set_videos_schedule(token_path)
+
+#上传相关数据
+
+#!pip install supabase
+import subprocess
+
+try:
+    subprocess.check_call(["pip", "install", "supabase"])
+    print("yt-dlp 安装成功")
+except subprocess.CalledProcessError as e:
+    print(f"安装失败: {e}")
+from supabase import create_client, Client
+
+# 初始化 Supabase 客户端
+import os
+from supabase import create_client, Client
+
+url: str = "https://lvpbegckuzmppqcvbtkj.supabase.co"
+key: str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2cGJlZ2NrdXptcHBxY3ZidGtqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxODM2MDAsImV4cCI6MjA2OTc1OTYwMH0.CxEcETn8zfBRxHC800QIpTgZgqLVNh5ioULMJ64KuBg"
+supabase: Client = create_client(url, key)
+
+def insert_unique_url(table: str, channel_name: str) -> str:
+    # 查询是否已存在
+    check = supabase.table(table).select("channel_name").eq("channel_name", channel_name).execute()
+
+    if check.data:
+        return f"✅ 已存在，无需插入: {channel_name}"
+    
+    # 插入新记录
+    response = supabase.table(table).insert({"channel_name": channel_name}).execute()
+    if response.data:
+        return f"🚀 插入成功: {channel_name}"
+    else:
+        return f"⚠️ 插入失败，请检查权限或字段结构"
+
+# 示例调用
+
+url_to_insert = channel_url
+status = insert_unique_url("youtube_url", url_to_insert)
+print(status)
