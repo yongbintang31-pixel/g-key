@@ -39,8 +39,8 @@ def insert_unique_url(table: str, channel_name: str) -> str:
 # 示例调用
 
 url_to_insert = channel_url
-status = insert_unique_url("youtube_url", url_to_insert)
-print(status)
+insert_unique_url_status = insert_unique_url("youtube_url", url_to_insert)
+print(insert_unique_url_status)
 ###############################################################################################
 #下载deep-filter
 # 定义文件路径
