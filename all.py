@@ -1321,6 +1321,9 @@ try:
         if not result:
           print('下载失败，可能已经处理过了')
           continue
+        if results['audio_filepath'] == None :
+          print('下载失败，audio_filepath==None')
+          continue
         print('下载成功！',result)
         title = get_refined_audiobook_title(result['title'],ggapi)
         title = format_youtube_title(title)
