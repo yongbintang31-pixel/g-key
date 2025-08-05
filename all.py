@@ -1321,7 +1321,7 @@ try:
         if not result:
           print('下载失败，可能已经处理过了')
           continue
-        if not results['audio_filepath'] or results['audio_filepath'] == None :
+        if not result['audio_filepath'] or result['audio_filepath'] == None :
           print('下载失败，audio_filepath==None')
           continue
         print('下载成功！',result)
