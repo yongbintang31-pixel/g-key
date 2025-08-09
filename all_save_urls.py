@@ -2,8 +2,81 @@
 #https://chrome.google.com/webstore/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc
 
 ###############################################################################################
-#上传相关数据
 
+#使用云cookies
+import os
+import requests
+import glob
+
+# Step 0: Mount Google Drive if you are in a Colab environment.
+# Uncomment the following two lines and run them in a separate cell
+# if you are running this in Google Colab.
+# from google.colab import drive
+# drive.mount('/content/drive')
+
+# --- Configuration ---
+# The URL for the raw file on GitHub.
+github_url = "https://raw.githubusercontent.com/yongbintang31-pixel/g-key/main/www.youtube.com_cookies.txt"
+# The target directory where the final file will be saved.
+target_dir = "/content/drive/MyDrive"
+# The name of the file to download and save.
+file_name = "www.youtube.com_cookies.txt"
+# The full path for the new file.
+final_file_path = os.path.join(target_dir, file_name)
+
+print("使用云cookies!!!开始执行文件操作...")
+print("-" * 30)
+
+# Step 1: Download the file from GitHub.
+print(f"正在从GitHub下载文件: {github_url}")
+try:
+    response = requests.get(github_url)
+    # Check for a successful response (status code 200)
+    response.raise_for_status() 
+    downloaded_content = response.text
+    print("文件下载成功。")
+except requests.exceptions.RequestException as e:
+    print(f"下载文件时出错: {e}")
+    # Exit the script if download fails
+    exit()
+
+# Step 2: Delete any existing files in the target directory that match the pattern.
+print(f"\n正在删除目录 '{target_dir}' 中包含 '{file_name}' 的所有旧文件...")
+try:
+    # Use glob to find all files that match the pattern
+    file_pattern = os.path.join(target_dir, f"*{os.path.splitext(file_name)[0]}*.txt")
+    files_to_delete = glob.glob(file_pattern)
+
+    if files_to_delete:
+        for file_path in files_to_delete:
+            os.remove(file_path)
+            print(f"已删除: {file_path}")
+    else:
+        print("未找到需要删除的匹配文件。")
+
+except OSError as e:
+    print(f"删除文件时出错: {e}")
+    pass
+
+# Step 3: Save the newly downloaded file to the target directory.
+print(f"\n正在将新下载的文件保存到: '{final_file_path}'...")
+try:
+    # Ensure the target directory exists
+    os.makedirs(target_dir, exist_ok=True)
+    
+    # Write the downloaded content to the new file
+    with open(final_file_path, 'w', encoding='utf-8') as f:
+        f.write(downloaded_content)
+    print("文件保存成功。")
+
+except IOError as e:
+    print(f"写入文件时出错: {e}")
+    exit()
+
+print("-" * 30)
+print("所有操作已完成。")
+
+#上传相关数据
 #!pip install supabase
 import subprocess
 
@@ -176,7 +249,21 @@ def df_and_create_video(results):
     print(audio_path)
     clear_folder(split_output_directory)
     split_m4a_to_wav(audio_path, split_output_directory,segment_duration_minutes =60, sample_rate=16000, mono=True, bit_depth=16)
-    df_and_merge_wav_files(split_output_directory, df_output_directory, final_m4a_to_wav_file)
+    try:
+        df_and_merge_wav_files(split_output_directory, df_output_directory, final_m4a_to_wav_file)
+    except Exception as e:
+        print(f" df_and_merge_wav_files发生意外错误: {e}")
+        return False
+    # 定义要检查的文件的路径
+    final_m4a_to_wav_file = "/content/combined_output.wav"
+    # 使用 os.path.exists() 函数来检查文件是否存在
+    if not os.path.exists(final_m4a_to_wav_file):
+        # 如果文件不存在，则打印相关信息
+        print(f"文件不存在：{final_m4a_to_wav_file}")
+        return False
+    else:
+        # 如果文件存在，也可以选择打印一条消息
+        print(f"文件已找到：{final_m4a_to_wav_file}")
     image_file = find_image_files(work_dir)
     bgm_audio_path = select_random_bgm('/content/drive/MyDrive/bgm')
     create_video_with_audio(
@@ -188,7 +275,7 @@ def df_and_create_video(results):
     output_without_bgm = "/content/output_video_audio_without_bgm.mp4"
     cut_video_baseon_audio("/content/12h_output_video_audio.mp4", final_m4a_to_wav_file, output_without_bgm)
     fin_video_path = add_bgm_to_video(output_without_bgm, bgm_audio_path, adelay_ms=0, volume=bgm_volum)
-
+    return True
 
 def clear_folder(folder_path):
     """清空指定文件夹中的所有文件和子文件夹"""
@@ -287,8 +374,37 @@ def process_wav_file(wav_file, output_dir):
     subprocess.run(command, shell=True, check=True)
     return output_file
 
+def process_wav_file(wav_file, output_dir):
+    """
+    使用 deep-filter 程序处理 WAV 文件。
+
+    Args:
+        wav_file (str): 输入 WAV 文件的路径。
+        output_dir (str): 输出目录的路径。
+
+    Returns:
+        str or bool: 如果成功，返回输出文件的路径；如果失败，返回 False。
+    """
+    output_file = os.path.join(output_dir, os.path.basename(wav_file))
+    command = f'/content/deep-filter-0.5.6-x86_64-unknown-linux-musl "{wav_file}" --output-dir "{output_dir}"'
+    
+    print(f"正在执行命令: {command}")
+    
+    try:
+        subprocess.run(command, shell=True, check=True)
+        print("命令执行成功。")
+        return output_file
+    except subprocess.CalledProcessError as e:
+        print(f"命令执行失败，错误代码: {e.returncode}")
+        print(f"错误输出: {e.stderr}")
+        return False
+    except Exception as e:
+        print(f"发生意外错误: {e}")
+        return False
+
 def df_and_merge_wav_files(input_dir, output_dir, final_output_file):
     # 确保输出目录存在
+    
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -745,179 +861,7 @@ import yt_dlp
 import os
 from PIL import Image # Import Pillow library, needs to be installed first: pip install Pillow
 
-def download_audio_and_thumbnail_separately(url, download_folder="downloads"):
-    """
-    Downloads the best quality audio from a YouTube video and
-    the video's thumbnail separately. The audio will be converted to M4A,
-    and the thumbnail will be downloaded in its original format, then converted to JPG using Pillow.
-    Also, saves the video title and description to a text file.
 
-    Args:
-        url (str): The YouTube video URL.
-        download_folder (str): The folder where downloaded files will be saved.
-
-    Returns:
-        dict: A dictionary containing details of the downloaded files and video info,
-              or None if a critical error occurred.
-              Keys include: 'title', 'description', 'audio_filepath', 'thumbnail_filepath', 'info_filepath'.
-    """
-    print(f"Processing video: {url}")
-
-    # Create the download folder if it doesn't exist
-    if not os.path.exists(download_folder):
-        os.makedirs(download_folder)
-        print(f"Created download folder: '{download_folder}'")
-
-    video_info = None # Initialize video_info to store extracted video details
-    download_results = {
-        'title': None,
-        'description': None,
-        'audio_filepath': None,
-        'thumbnail_filepath': None,
-        'info_filepath': None
-    }
-
-    # --- Extract video information first (needed for both audio, thumbnail, title, and description) ---
-    info_ydl_opts = {
-        'skip_download': True, # Only extract info, do not download files yet
-        'noplaylist': True, # If the URL is a playlist, only extract info for a single video
-    }
-    print("\n--- Extracting video information ---")
-    try:
-        with yt_dlp.YoutubeDL(info_ydl_opts) as ydl:
-            video_info = ydl.extract_info(url, download=False) # download=False to just get info
-            download_results['title'] = video_info.get('title', 'Unknown Title')
-            download_results['description'] = video_info.get('description', 'No description available.')
-            print(f"✅ Video information extracted successfully for '{download_results['title']}'.")
-    except Exception as e:
-        print(f"❌ Error extracting video information: {e}")
-        return None # Return None on critical error
-
-    if not video_info:
-        print("❌ Could not get video information. Aborting.")
-        return None
-
-    audio_title = download_results['title']
-    thumbnail_title = download_results['title'] # Use same title for thumbnail
-    video_description = download_results['description']
-
-    # --- Save video title and description to a text file ---
-    info_filepath = os.path.join(download_folder, f"{audio_title}.txt")
-    download_results['info_filepath'] = info_filepath
-    print(f"\n--- Saving video title and description to: '{info_filepath}' ---")
-    try:
-        with open(info_filepath, 'w', encoding='utf-8') as f:
-            f.write(f"Title: {audio_title}\n\n")
-            f.write(f"Description:\n{video_description}\n")
-        print(f"✅ Video title and description saved to '{info_filepath}'.")
-    except Exception as e:
-        print(f"❌ Error saving title and description: {e}")
-
-    # --- Audio download options (convert to M4A) ---
-    audio_ydl_opts = {
-        'format': 'bestaudio', # Download the best audio format
-        'postprocessors': [
-            {
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'm4a', # Convert audio to M4A format (CHANGED from 'wav')
-            }
-        ],
-        # Output file name includes the specified download folder
-        'outtmpl': os.path.join(download_folder, '%(title)s.%(ext)s'),
-        'noplaylist': True, # If the URL is a playlist, only download a single video
-        'progress_hooks': [lambda d: print(f"Audio download progress: {d['_percent_str']}")] # Print download progress
-    }
-
-    print("\n--- Starting audio download (M4A format) ---")
-    try:
-        with yt_dlp.YoutubeDL(audio_ydl_opts) as ydl:
-            ydl.download([url])
-            # Determine the actual audio file path after download
-            # yt-dlp usually names it based on outtmpl and the actual video title/ext
-            # Adjust the extension check for m4a
-            audio_ext_from_info = video_info.get('ext', 'm4a') # Use info_dict for more accurate ext
-            download_results['audio_filepath'] = os.path.join(download_folder, f"{audio_title}.{audio_ext_from_info}")
-            # Verify file existence (optional but good practice)
-            if not os.path.exists(download_results['audio_filepath']):
-                # If the inferred path doesn't exist, try common audio extensions including m4a
-                for ext in ['m4a', 'wav', 'mp3']:
-                    temp_path = os.path.join(download_folder, f"{audio_title}.{ext}")
-                    if os.path.exists(temp_path):
-                        download_results['audio_filepath'] = temp_path
-                        break
-
-            if download_results['audio_filepath'] and os.path.exists(download_results['audio_filepath']):
-                print(f"✅ Audio '{download_results['audio_filepath']}' downloaded successfully.")
-            else:
-                print(f"❌ Audio download completed, but actual file path could not be confirmed: {os.path.join(download_folder, audio_title)}.m4a (or similar).")
-                # This doesn't stop execution, but flags an issue
-
-    except Exception as e:
-        print(f"❌ Error downloading audio: {e}")
-        # Continue to thumbnail download even if audio fails, if info was extracted
-
-    # --- Thumbnail download options (yt-dlp directly downloads original format) ---
-    thumbnail_ydl_opts = {
-        'skip_download': True, # Key: do not download the video itself
-        'writethumbnail': True, # Write the thumbnail file
-        # Output file name includes the specified download folder and temporary name
-        'outtmpl': os.path.join(download_folder, '%(title)s_original_thumb.%(ext)s'),
-        'noplaylist': True, # If the URL is a playlist, only download a single video
-    }
-
-    print("\n--- Starting original thumbnail download ---")
-    original_thumbnail_filepath = None
-    try:
-        with yt_dlp.YoutubeDL(thumbnail_ydl_opts) as ydl:
-            ydl.download([url]) # Download the thumbnail (skip_download=True, writethumbnail=True)
-
-            # After download, find the actual filename generated by yt-dlp
-            # We'll rely on listing the directory for the _original_thumb file
-            found_thumb_file = False
-            for fname in os.listdir(download_folder):
-                if (fname.endswith('.webp') or fname.endswith('.jpg') or fname.endswith('.png') or fname.endswith('.jpeg')):
-                    original_thumbnail_filepath = os.path.join(download_folder, fname)
-                    print(f"💡 Found original thumbnail file: '{original_thumbnail_filepath}'")
-                    found_thumb_file = True
-                    break
-
-            if not found_thumb_file:
-                print(f"❌ Original thumbnail could not be downloaded or found. Please check yt-dlp detailed output.")
-                # This doesn't stop execution, but flags an issue
-                # return None # Do not return None here to allow partial success
-
-    except Exception as e:
-        print(f"❌ Error downloading thumbnail: {e}")
-        # return None # Do not return None here to allow partial success
-
-    # --- Convert thumbnail to JPG using Pillow ---
-    if original_thumbnail_filepath and os.path.exists(original_thumbnail_filepath):
-        try:
-            jpg_thumbnail_filepath = os.path.join(download_folder, f"{thumbnail_title}.jpg")
-            download_results['thumbnail_filepath'] = jpg_thumbnail_filepath
-            print(f"\n--- Converting thumbnail '{original_thumbnail_filepath}' to '{jpg_thumbnail_filepath}' ---")
-
-            # Open image using Pillow
-            with Image.open(original_thumbnail_filepath) as img:
-                # Convert to RGB mode if image has an alpha channel (e.g., PNG) to save as JPG
-                if img.mode == 'RGBA':
-                    img = img.convert('RGB')
-                # Save as JPG format
-                img.save(jpg_thumbnail_filepath, 'jpeg')
-
-            print(f"✅ Thumbnail successfully converted to JPG format: '{jpg_thumbnail_filepath}'.")
-
-            # Optional: Delete the original downloaded thumbnail file
-            if os.path.exists(original_thumbnail_filepath):
-                os.remove(original_thumbnail_filepath)
-                print(f"🗑️ Original thumbnail file deleted: '{original_thumbnail_filepath}'.")
-
-        except Exception as e:
-            print(f"❌ Error converting thumbnail to JPG: {e}")
-    else:
-        print("Skipping JPG conversion as original thumbnail was not found or downloaded.")
-
-    return download_results
 
 
 
@@ -1307,9 +1251,61 @@ create_output_folder(output_folder)
 if not os.path.exists(processed_urls_file):
     open(processed_urls_file, 'w').close()
 
-urls = get_videos_from_channel(channel_url,min_duration_seconds,max_duration_seconds,max_videos=max_videos)
+import os
+import hashlib
+import datetime
+
+# 1. 生成保存文件路径
+# 使用 SHA256 哈希确保文件名唯一且稳定
+file_hash = hashlib.sha256(token_path.encode()).hexdigest()
+file_path = f"/content/drive/MyDrive/{file_hash}.txt"
+
+# 初始化 urls 变量
+urls = []
+
+# 2. 检查文件是否存在并决定是否重新下载
+if os.path.exists(file_path):
+    print(f"文件 {file_path} 已存在。")
+
+    # 检查文件修改时间是否超过 30 天
+    file_mtime = os.path.getmtime(file_path)
+    thirty_days_ago = datetime.datetime.now() - datetime.timedelta(days=30)
+
+    if datetime.datetime.fromtimestamp(file_mtime) > thirty_days_ago:
+        print("文件未过期，直接从文件中读取链接。")
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                urls = [line.strip() for line in f if line.strip()]
+        except Exception as e:
+            print(f"读取文件时出错: {e}")
+            print("将重新下载链接。")
+            urls = get_videos_from_channel(channel_url, min_duration_seconds, max_duration_seconds, max_videos)
+    else:
+        print("文件已超过 30 天，将重新下载链接并更新文件。")
+        urls = get_videos_from_channel(channel_url, min_duration_seconds, max_duration_seconds, max_videos)
+        
+else:
+    print(f"文件 {file_path} 不存在，正在下载链接并保存。")
+    urls = get_videos_from_channel(channel_url, min_duration_seconds, max_duration_seconds, max_videos)
+
+
+# 3. 如果需要，将新下载的链接保存到文件
+if not os.path.exists(file_path) or datetime.datetime.fromtimestamp(os.path.getmtime(file_path)) <= thirty_days_ago:
+    try:
+        with open(file_path, "w", encoding="utf-8") as f:
+            for url in urls:
+                f.write(f"{url}\n")
+        print(f"新下载的 {len(urls)} 个链接已保存到 {file_path}")
+    except Exception as e:
+        print(f"保存文件时出错: {e}")
+
+# 4. 保持原始逻辑，反转链接列表
 urls.reverse()
-print(urls)
+
+# 5. 打印最终的链接列表
+print("\n最终的视频链接列表:")
+print(urls[:10])
+
 n = 1
 try:
     for url in urls:
@@ -1330,7 +1326,11 @@ try:
         print(title)
         description = get_refined_youtube_description(result['description'],ggapi)
         print(description)
-        df_and_create_video(result)
+        df_reuslt = df_and_create_video(result)
+        if not df_reuslt:
+            print('df处理失败，跳过这个视频')
+            write_url_to_file(processed_urls_file, url)
+            continue
         #result = {"title": "我的新视频文件"}
         source_file = "/content/processed_output_video_audio_without_bgm.mp4"
         # 调用函数
@@ -1753,5 +1753,3 @@ def set_videos_schedule(token_path):
 
 
 set_videos_schedule(token_path)
-
-
