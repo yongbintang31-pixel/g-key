@@ -249,7 +249,11 @@ def df_and_create_video(results):
     print(audio_path)
     clear_folder(split_output_directory)
     split_m4a_to_wav(audio_path, split_output_directory,segment_duration_minutes =60, sample_rate=16000, mono=True, bit_depth=16)
-    df_and_merge_wav_files(split_output_directory, df_output_directory, final_m4a_to_wav_file)
+    try:
+        df_and_merge_wav_files(split_output_directory, df_output_directory, final_m4a_to_wav_file)
+    except Exception as e:
+        print(f" df_and_merge_wav_files发生意外错误: {e}")
+        return False
     # 定义要检查的文件的路径
     final_m4a_to_wav_file = "/content/combined_output.wav"
     # 使用 os.path.exists() 函数来检查文件是否存在
@@ -400,6 +404,7 @@ def process_wav_file(wav_file, output_dir):
 
 def df_and_merge_wav_files(input_dir, output_dir, final_output_file):
     # 确保输出目录存在
+    
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
