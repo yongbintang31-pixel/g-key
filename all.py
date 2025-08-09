@@ -250,6 +250,16 @@ def df_and_create_video(results):
     clear_folder(split_output_directory)
     split_m4a_to_wav(audio_path, split_output_directory,segment_duration_minutes =60, sample_rate=16000, mono=True, bit_depth=16)
     df_and_merge_wav_files(split_output_directory, df_output_directory, final_m4a_to_wav_file)
+    # 定义要检查的文件的路径
+    final_m4a_to_wav_file = "/content/combined_output.wav"
+    # 使用 os.path.exists() 函数来检查文件是否存在
+    if not os.path.exists(final_m4a_to_wav_file):
+        # 如果文件不存在，则打印相关信息
+        print(f"文件不存在：{final_m4a_to_wav_file}")
+        return False
+    else:
+        # 如果文件存在，也可以选择打印一条消息
+        print(f"文件已找到：{final_m4a_to_wav_file}")
     image_file = find_image_files(work_dir)
     bgm_audio_path = select_random_bgm('/content/drive/MyDrive/bgm')
     create_video_with_audio(
@@ -261,7 +271,7 @@ def df_and_create_video(results):
     output_without_bgm = "/content/output_video_audio_without_bgm.mp4"
     cut_video_baseon_audio("/content/12h_output_video_audio.mp4", final_m4a_to_wav_file, output_without_bgm)
     fin_video_path = add_bgm_to_video(output_without_bgm, bgm_audio_path, adelay_ms=0, volume=bgm_volum)
-
+    return True
 
 def clear_folder(folder_path):
     """清空指定文件夹中的所有文件和子文件夹"""
@@ -359,6 +369,34 @@ def process_wav_file(wav_file, output_dir):
     print(command)
     subprocess.run(command, shell=True, check=True)
     return output_file
+
+def process_wav_file(wav_file, output_dir):
+    """
+    使用 deep-filter 程序处理 WAV 文件。
+
+    Args:
+        wav_file (str): 输入 WAV 文件的路径。
+        output_dir (str): 输出目录的路径。
+
+    Returns:
+        str or bool: 如果成功，返回输出文件的路径；如果失败，返回 False。
+    """
+    output_file = os.path.join(output_dir, os.path.basename(wav_file))
+    command = f'/content/deep-filter-0.5.6-x86_64-unknown-linux-musl "{wav_file}" --output-dir "{output_dir}"'
+    
+    print(f"正在执行命令: {command}")
+    
+    try:
+        subprocess.run(command, shell=True, check=True)
+        print("命令执行成功。")
+        return output_file
+    except subprocess.CalledProcessError as e:
+        print(f"命令执行失败，错误代码: {e.returncode}")
+        print(f"错误输出: {e.stderr}")
+        return False
+    except Exception as e:
+        print(f"发生意外错误: {e}")
+        return False
 
 def df_and_merge_wav_files(input_dir, output_dir, final_output_file):
     # 确保输出目录存在
@@ -1231,7 +1269,11 @@ try:
         print(title)
         description = get_refined_youtube_description(result['description'],ggapi)
         print(description)
-        df_and_create_video(result)
+        df_reuslt = df_and_create_video(result)
+        if not df_reuslt:
+            print('df处理失败，跳过这个视频')
+            write_url_to_file(processed_urls_file, url)
+            continue
         #result = {"title": "我的新视频文件"}
         source_file = "/content/processed_output_video_audio_without_bgm.mp4"
         # 调用函数
