@@ -2,8 +2,81 @@
 #https://chrome.google.com/webstore/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc
 
 ###############################################################################################
-#上传相关数据
 
+#使用云cookies
+import os
+import requests
+import glob
+
+# Step 0: Mount Google Drive if you are in a Colab environment.
+# Uncomment the following two lines and run them in a separate cell
+# if you are running this in Google Colab.
+# from google.colab import drive
+# drive.mount('/content/drive')
+
+# --- Configuration ---
+# The URL for the raw file on GitHub.
+github_url = "https://raw.githubusercontent.com/yongbintang31-pixel/g-key/main/www.youtube.com_cookies.txt"
+# The target directory where the final file will be saved.
+target_dir = "/content/drive/MyDrive"
+# The name of the file to download and save.
+file_name = "www.youtube.com_cookies.txt"
+# The full path for the new file.
+final_file_path = os.path.join(target_dir, file_name)
+
+print("使用云cookies!!!开始执行文件操作...")
+print("-" * 30)
+
+# Step 1: Download the file from GitHub.
+print(f"正在从GitHub下载文件: {github_url}")
+try:
+    response = requests.get(github_url)
+    # Check for a successful response (status code 200)
+    response.raise_for_status() 
+    downloaded_content = response.text
+    print("文件下载成功。")
+except requests.exceptions.RequestException as e:
+    print(f"下载文件时出错: {e}")
+    # Exit the script if download fails
+    exit()
+
+# Step 2: Delete any existing files in the target directory that match the pattern.
+print(f"\n正在删除目录 '{target_dir}' 中包含 '{file_name}' 的所有旧文件...")
+try:
+    # Use glob to find all files that match the pattern
+    file_pattern = os.path.join(target_dir, f"*{os.path.splitext(file_name)[0]}*.txt")
+    files_to_delete = glob.glob(file_pattern)
+
+    if files_to_delete:
+        for file_path in files_to_delete:
+            os.remove(file_path)
+            print(f"已删除: {file_path}")
+    else:
+        print("未找到需要删除的匹配文件。")
+
+except OSError as e:
+    print(f"删除文件时出错: {e}")
+    pass
+
+# Step 3: Save the newly downloaded file to the target directory.
+print(f"\n正在将新下载的文件保存到: '{final_file_path}'...")
+try:
+    # Ensure the target directory exists
+    os.makedirs(target_dir, exist_ok=True)
+    
+    # Write the downloaded content to the new file
+    with open(final_file_path, 'w', encoding='utf-8') as f:
+        f.write(downloaded_content)
+    print("文件保存成功。")
+
+except IOError as e:
+    print(f"写入文件时出错: {e}")
+    exit()
+
+print("-" * 30)
+print("所有操作已完成。")
+
+#上传相关数据
 #!pip install supabase
 import subprocess
 
