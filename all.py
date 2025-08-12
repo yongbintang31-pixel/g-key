@@ -1263,7 +1263,7 @@ SCOPES = ['https://www.googleapis.com/auth/youtube']
 # 定义客户端密钥文件的名称
 # 请确保您已从 Google Cloud Console 下载此文件，并将其命名为 client_secrets.json
 
-def authenticate_with_saved_token(token_path):
+def authenticate_with_saved_token():
     # 加载已保存的令牌
     credentials = Credentials.from_authorized_user_file(token_path)
     return build('youtube', 'v3', credentials=credentials)
@@ -1563,7 +1563,7 @@ def get_latest_published_video_date(youtube_service, channel_id):
 
 def set_videos_schedule(token_path):
     """主函数，执行视频管理逻辑。"""
-    youtube_service = authenticate_with_saved_token(token_path)
+    youtube_service = authenticate_with_saved_token()
 
     if not youtube_service:
         print("无法获取 YouTube 服务，请检查认证设置。")
