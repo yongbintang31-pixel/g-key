@@ -1242,57 +1242,6 @@ def authenticate_with_saved_token():
     credentials = Credentials.from_authorized_user_file(token_path)
     return build('youtube', 'v3', credentials=credentials)
 
-#@title 主要流程
-
-processed_urls_file = '/content/drive/MyDrive/ok_url_test2.txt'
-
-create_output_folder(output_folder)
-
-if not os.path.exists(processed_urls_file):
-    open(processed_urls_file, 'w').close()
-
-urls = get_videos_from_channel(channel_url,min_duration_seconds,max_duration_seconds,max_videos=max_videos)
-urls.reverse()
-print(urls)
-n = 1
-try:
-    for url in urls:
-        if one_time_to_make_videos < n:
-          break
-        create_output_folder(output_folder)
-        result = download_video(url, output_folder, processed_urls_file)
-        print('result',result)
-        if not result:
-          print('下载失败，可能已经处理过了')
-          continue
-        if not result['audio_filepath'] or result['audio_filepath'] == None :
-          print('下载失败，audio_filepath==None')
-          continue
-        print('下载成功！',result)
-        title = get_refined_audiobook_title(result['title'],ggapi)
-        title = format_youtube_title(title)
-        print(title)
-        description = get_refined_youtube_description(result['description'],ggapi)
-        print(description)
-        df_reuslt = df_and_create_video(result)
-        if not df_reuslt:
-            print('df处理失败，跳过这个视频')
-            write_url_to_file(processed_urls_file, url)
-            continue
-        #result = {"title": "我的新视频文件"}
-        source_file = "/content/processed_output_video_audio_without_bgm.mp4"
-        # 调用函数
-        #copy_and_rename_video(source_file, result["title"])
-        youtube = authenticate_with_saved_token()
-        video_file = source_file
-        tags =[]
-        days = 1
-        upload_video(youtube, video_file, title, description, tags,status,days)
-        write_url_to_file(processed_urls_file, url)
-        clear_output()
-except Exception as e:
-    print(e)
-
 print("开始定时发布")
 #################################################################################################################################################################################
 time.sleep(30)
@@ -1701,5 +1650,59 @@ def set_videos_schedule(token_path):
 
 
 set_videos_schedule(token_path)
+
+###########################################################################################
+print("主要流程")
+#@title 主要流程
+
+processed_urls_file = '/content/drive/MyDrive/ok_url_test2.txt'
+
+create_output_folder(output_folder)
+
+if not os.path.exists(processed_urls_file):
+    open(processed_urls_file, 'w').close()
+
+urls = get_videos_from_channel(channel_url,min_duration_seconds,max_duration_seconds,max_videos=max_videos)
+urls.reverse()
+print(urls)
+n = 1
+try:
+    for url in urls:
+        if one_time_to_make_videos < n:
+          break
+        create_output_folder(output_folder)
+        result = download_video(url, output_folder, processed_urls_file)
+        print('result',result)
+        if not result:
+          print('下载失败，可能已经处理过了')
+          continue
+        if not result['audio_filepath'] or result['audio_filepath'] == None :
+          print('下载失败，audio_filepath==None')
+          continue
+        print('下载成功！',result)
+        title = get_refined_audiobook_title(result['title'],ggapi)
+        title = format_youtube_title(title)
+        print(title)
+        description = get_refined_youtube_description(result['description'],ggapi)
+        print(description)
+        df_reuslt = df_and_create_video(result)
+        if not df_reuslt:
+            print('df处理失败，跳过这个视频')
+            write_url_to_file(processed_urls_file, url)
+            continue
+        #result = {"title": "我的新视频文件"}
+        source_file = "/content/processed_output_video_audio_without_bgm.mp4"
+        # 调用函数
+        #copy_and_rename_video(source_file, result["title"])
+        youtube = authenticate_with_saved_token()
+        video_file = source_file
+        tags =[]
+        days = 1
+        upload_video(youtube, video_file, title, description, tags,status,days)
+        write_url_to_file(processed_urls_file, url)
+        clear_output()
+except Exception as e:
+    print(e)
+
 
 
