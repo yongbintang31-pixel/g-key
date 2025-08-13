@@ -1507,6 +1507,7 @@ def get_latest_published_video_date(youtube_service, channel_id):
             for item in playlist_items_response.get('items', []):
                 video_id = item['contentDetails']['videoId']
                 all_video_ids.append(video_id)
+            break
             next_page_token = playlist_items_response.get('nextPageToken')
             if not next_page_token:
                 break
