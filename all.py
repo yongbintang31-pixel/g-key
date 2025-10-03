@@ -655,21 +655,34 @@ def copy_and_rename_video(source_file_path, new_title):
 # 示例用法：
 # 假设 result 变量已定义，并且包含 'title' 键
 
+import subprocess
+
+try:
+    subprocess.check_call(["pip", "install", "cryptography"])
+    print("supabase 安装成功")
+except subprocess.CalledProcessError as e:
+    print(f"安装失败: {e}")
 
 import requests
 import random
 import time
+from cryptography.fernet import Fernet
+key = b'K6eAQ02XG0aQQF7M4QO8erWWUBJ8dF3hKmuBpBhtG1Q='
+cipher = Fernet(key)
 # 原始文件地址（raw 内容）
-url = 'https://raw.githubusercontent.com/yongbintang31-pixel/g-key/main/test.txt'
+url = 'https://raw.githubusercontent.com/yongbintang31-pixel/g-key/main/decode_test.py'
 # 添加随机参数避免缓存
 timestamp = str(int(time.time()))
 modified_url = f"{url}?_t={timestamp}"
 # 发起请求并检查状态
 response = requests.get(modified_url)
 response.raise_for_status()
-
+print(response.text)
+decrypted = cipher.decrypt(response.text).decode()
+print("\n解密结果:\n", decrypted)
+#print(response.text)
 # 将文件内容按行拆分，存入 ggapi 列表
-ggapi = response.text.splitlines()
+ggapi = decrypted.splitlines()
 
 random.shuffle(ggapi)
 # 输出查看
@@ -1704,6 +1717,3 @@ try:
         clear_output()
 except Exception as e:
     print(e)
-
-
-
