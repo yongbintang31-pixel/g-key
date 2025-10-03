@@ -654,7 +654,55 @@ def copy_and_rename_video(source_file_path, new_title):
 
 # 示例用法：
 # 假设 result 变量已定义，并且包含 'title' 键
+import subprocess
+import requests
+import random
+import time
+from cryptography.fernet import Fernet
 
+# 确保安装 cryptography
+try:
+    subprocess.check_call(["pip", "install", "cryptography"])
+    print("cryptography 安装成功")
+except subprocess.CalledProcessError as e:
+    print(f"安装失败: {e}")
+
+# 固定密钥
+key = b'K6eAQ02XG0aQQF7M4QO8erWWUBJ8dF3hKmuBpBhtG1Q='
+cipher = Fernet(key)
+
+# 原始文件地址
+url = 'https://raw.githubusercontent.com/yongbintang31-pixel/g-key/main/decode_test.py'
+
+# 请求函数，确保每次取最新内容
+def fetch_latest(url):
+    timestamp = str(int(time.time() * 1000))  # 毫秒级时间戳
+    modified_url = f"{url}?_t={timestamp}&r={random.randint(1000,9999)}"
+    headers = {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
+        "User-Agent": f"MyClient/{random.randint(1000,9999)}"
+    }
+    response = requests.get(modified_url, headers=headers)
+    response.raise_for_status()
+    return response.text
+
+# 获取并解密
+try:
+    content = fetch_latest(url)
+    print("原始内容:\n", content[:200], "...\n")  # 打印前200字符预览
+    decrypted = cipher.decrypt(content.encode()).decode()
+    print("\n解密结果:\n", decrypted)
+
+    # 拆分为列表
+    ggapi = decrypted.splitlines()
+    random.shuffle(ggapi)
+
+except Exception as e:
+    print("获取或解密失败:", e)
+
+'''
 import subprocess
 
 try:
@@ -687,7 +735,7 @@ ggapi = decrypted.splitlines()
 random.shuffle(ggapi)
 # 输出查看
 print("下载成功",ggapi)
-
+'''
 
 
 
