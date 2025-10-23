@@ -654,27 +654,88 @@ def copy_and_rename_video(source_file_path, new_title):
 
 # 示例用法：
 # 假设 result 变量已定义，并且包含 'title' 键
+import subprocess
+import requests
+import random
+import time
+from cryptography.fernet import Fernet
 
+# 确保安装 cryptography
+try:
+    subprocess.check_call(["pip", "install", "cryptography"])
+    print("cryptography 安装成功")
+except subprocess.CalledProcessError as e:
+    print(f"安装失败: {e}")
+
+# 固定密钥
+key = b'K6eAQ02XG0aQQF7M4QO8erWWUBJ8dF3hKmuBpBhtG1Q='
+cipher = Fernet(key)
+
+# 原始文件地址
+url = 'https://raw.githubusercontent.com/yongbintang31-pixel/g-key/main/decode_test.py'
+
+# 请求函数，确保每次取最新内容
+def fetch_latest(url):
+    timestamp = str(int(time.time() * 1000))  # 毫秒级时间戳
+    modified_url = f"{url}?_t={timestamp}&r={random.randint(1000,9999)}"
+    headers = {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
+        "User-Agent": f"MyClient/{random.randint(1000,9999)}"
+    }
+    response = requests.get(modified_url, headers=headers)
+    response.raise_for_status()
+    return response.text
+
+# 获取并解密
+try:
+    content = fetch_latest(url)
+    print("原始内容:\n", content[:200], "...\n")  # 打印前200字符预览
+    decrypted = cipher.decrypt(content.encode()).decode()
+    print("\n解密结果:\n", decrypted)
+
+    # 拆分为列表
+    ggapi = decrypted.splitlines()
+    random.shuffle(ggapi)
+
+except Exception as e:
+    print("获取或解密失败:", e)
+
+'''
+import subprocess
+
+try:
+    subprocess.check_call(["pip", "install", "cryptography"])
+    print("supabase 安装成功")
+except subprocess.CalledProcessError as e:
+    print(f"安装失败: {e}")
 
 import requests
 import random
 import time
+from cryptography.fernet import Fernet
+key = b'K6eAQ02XG0aQQF7M4QO8erWWUBJ8dF3hKmuBpBhtG1Q='
+cipher = Fernet(key)
 # 原始文件地址（raw 内容）
-url = 'https://raw.githubusercontent.com/yongbintang31-pixel/g-key/main/test.txt'
+url = 'https://raw.githubusercontent.com/yongbintang31-pixel/g-key/main/decode_test.py'
 # 添加随机参数避免缓存
 timestamp = str(int(time.time()))
 modified_url = f"{url}?_t={timestamp}"
 # 发起请求并检查状态
 response = requests.get(modified_url)
 response.raise_for_status()
-
+print(response.text)
+decrypted = cipher.decrypt(response.text).decode()
+print("\n解密结果:\n", decrypted)
+#print(response.text)
 # 将文件内容按行拆分，存入 ggapi 列表
-ggapi = response.text.splitlines()
+ggapi = decrypted.splitlines()
 
 random.shuffle(ggapi)
 # 输出查看
 print("下载成功",ggapi)
-
+'''
 
 
 
@@ -1138,6 +1199,7 @@ def download_audio_and_thumbnail_separately(url, download_folder="downloads", co
     
     return download_results
 
+
 #@title youtube上传相关函数
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.oauth2.credentials import Credentials
@@ -1225,112 +1287,9 @@ def authenticate_with_saved_token():
     credentials = Credentials.from_authorized_user_file(token_path)
     return build('youtube', 'v3', credentials=credentials)
 
-#@title 主要流程
-
-processed_urls_file = '/content/drive/MyDrive/ok_url_test2.txt'
-
-create_output_folder(output_folder)
-
-if not os.path.exists(processed_urls_file):
-    open(processed_urls_file, 'w').close()
-
-import os
-import hashlib
-import datetime
-
-# 1. 生成保存文件路径
-# 使用 SHA256 哈希确保文件名唯一且稳定
-file_hash = hashlib.sha256(token_path.encode()).hexdigest()
-file_path = f"/content/drive/MyDrive/{file_hash}.txt"
-
-# 初始化 urls 变量
-urls = []
-
-# 2. 检查文件是否存在并决定是否重新下载
-if os.path.exists(file_path):
-    print(f"文件 {file_path} 已存在。")
-
-    # 检查文件修改时间是否超过 30 天
-    file_mtime = os.path.getmtime(file_path)
-    thirty_days_ago = datetime.datetime.now() - datetime.timedelta(days=30)
-
-    if datetime.datetime.fromtimestamp(file_mtime) > thirty_days_ago:
-        print("文件未过期，直接从文件中读取链接。")
-        try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                urls = [line.strip() for line in f if line.strip()]
-        except Exception as e:
-            print(f"读取文件时出错: {e}")
-            print("将重新下载链接。")
-            urls = get_videos_from_channel(channel_url, min_duration_seconds, max_duration_seconds, max_videos)
-    else:
-        print("文件已超过 30 天，将重新下载链接并更新文件。")
-        urls = get_videos_from_channel(channel_url, min_duration_seconds, max_duration_seconds, max_videos)
-        
-else:
-    print(f"文件 {file_path} 不存在，正在下载链接并保存。")
-    urls = get_videos_from_channel(channel_url, min_duration_seconds, max_duration_seconds, max_videos)
-
-
-# 3. 如果需要，将新下载的链接保存到文件
-if not os.path.exists(file_path) or datetime.datetime.fromtimestamp(os.path.getmtime(file_path)) <= thirty_days_ago:
-    try:
-        with open(file_path, "w", encoding="utf-8") as f:
-            for url in urls:
-                f.write(f"{url}\n")
-        print(f"新下载的 {len(urls)} 个链接已保存到 {file_path}")
-    except Exception as e:
-        print(f"保存文件时出错: {e}")
-
-# 4. 保持原始逻辑，反转链接列表
-urls.reverse()
-
-# 5. 打印最终的链接列表
-print("\n最终的视频链接列表:")
-print(urls[:10])
-
-n = 1
-try:
-    for url in urls:
-        if one_time_to_make_videos < n:
-          break
-        create_output_folder(output_folder)
-        result = download_video(url, output_folder, processed_urls_file)
-        print('result',result)
-        if not result:
-          print('下载失败，可能已经处理过了')
-          continue
-        if not result['audio_filepath'] or result['audio_filepath'] == None :
-          print('下载失败，audio_filepath==None')
-          continue
-        print('下载成功！',result)
-        title = get_refined_audiobook_title(result['title'],ggapi)
-        title = format_youtube_title(title)
-        print(title)
-        description = get_refined_youtube_description(result['description'],ggapi)
-        print(description)
-        df_reuslt = df_and_create_video(result)
-        if not df_reuslt:
-            print('df处理失败，跳过这个视频')
-            write_url_to_file(processed_urls_file, url)
-            continue
-        #result = {"title": "我的新视频文件"}
-        source_file = "/content/processed_output_video_audio_without_bgm.mp4"
-        # 调用函数
-        #copy_and_rename_video(source_file, result["title"])
-        youtube = authenticate_with_saved_token()
-        video_file = source_file
-        tags =[]
-        days = 1
-        upload_video(youtube, video_file, title, description, tags,status,days)
-        write_url_to_file(processed_urls_file, url)
-        clear_output()
-except Exception as e:
-    print(e)
-
 print("开始定时发布")
 #################################################################################################################################################################################
-time.sleep(30)
+#time.sleep(30)
 from IPython.display import clear_output
 clear_output()
 # 导入必要的库
@@ -1349,7 +1308,7 @@ SCOPES = ['https://www.googleapis.com/auth/youtube']
 # 定义客户端密钥文件的名称
 # 请确保您已从 Google Cloud Console 下载此文件，并将其命名为 client_secrets.json
 
-def authenticate_with_saved_token(token_path):
+def authenticate_with_saved_token():
     # 加载已保存的令牌
     credentials = Credentials.from_authorized_user_file(token_path)
     return build('youtube', 'v3', credentials=credentials)
@@ -1426,7 +1385,7 @@ def list_unlisted_videos(youtube_service, channel_id):
             for item in playlist_items_response.get('items', []):
                 video_id = item['contentDetails']['videoId']
                 all_video_ids.append(video_id)
-
+            break # 直接退出循环
             next_page_token = playlist_items_response.get('nextPageToken')
             if not next_page_token:
                 break # 如果没有下一页，则退出循环
@@ -1593,6 +1552,7 @@ def get_latest_published_video_date(youtube_service, channel_id):
             for item in playlist_items_response.get('items', []):
                 video_id = item['contentDetails']['videoId']
                 all_video_ids.append(video_id)
+            break
             next_page_token = playlist_items_response.get('nextPageToken')
             if not next_page_token:
                 break
@@ -1649,7 +1609,7 @@ def get_latest_published_video_date(youtube_service, channel_id):
 
 def set_videos_schedule(token_path):
     """主函数，执行视频管理逻辑。"""
-    youtube_service = authenticate_with_saved_token(token_path)
+    youtube_service = authenticate_with_saved_token()
 
     if not youtube_service:
         print("无法获取 YouTube 服务，请检查认证设置。")
@@ -1736,3 +1696,56 @@ def set_videos_schedule(token_path):
 
 
 set_videos_schedule(token_path)
+
+###########################################################################################
+print("主要流程")
+#@title 主要流程
+
+processed_urls_file = '/content/drive/MyDrive/ok_url_test2.txt'
+
+create_output_folder(output_folder)
+
+if not os.path.exists(processed_urls_file):
+    open(processed_urls_file, 'w').close()
+
+urls = get_videos_from_channel(channel_url,min_duration_seconds,max_duration_seconds,max_videos=max_videos)
+urls.reverse()
+print(urls)
+n = 1
+try:
+    for url in urls:
+        if one_time_to_make_videos < n:
+          break
+        create_output_folder(output_folder)
+        result = download_video(url, output_folder, processed_urls_file)
+        print('result',result)
+        if not result:
+          print('下载失败，可能已经处理过了')
+          continue
+        if not result['audio_filepath'] or result['audio_filepath'] == None :
+          print('下载失败，audio_filepath==None')
+          continue
+        print('下载成功！',result)
+        title = get_refined_audiobook_title(result['title'],ggapi)
+        title = format_youtube_title(title)
+        print(title)
+        description = get_refined_youtube_description(result['description'],ggapi)
+        print(description)
+        df_reuslt = df_and_create_video(result)
+        if not df_reuslt:
+            print('df处理失败，跳过这个视频')
+            write_url_to_file(processed_urls_file, url)
+            continue
+        #result = {"title": "我的新视频文件"}
+        source_file = "/content/processed_output_video_audio_without_bgm.mp4"
+        # 调用函数
+        #copy_and_rename_video(source_file, result["title"])
+        youtube = authenticate_with_saved_token()
+        video_file = source_file
+        tags =[]
+        days = 1
+        upload_video(youtube, video_file, title, description, tags,status,days)
+        write_url_to_file(processed_urls_file, url)
+        clear_output()
+except Exception as e:
+    print(e)
